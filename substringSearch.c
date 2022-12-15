@@ -8,7 +8,7 @@ typedef struct{
   int dim;
 }pos;
 
-char * file_read(FILE *file, pos p);
+char* file_read(FILE *file, pos p);
 
 void main(int argc, char **argv) {
 
@@ -47,19 +47,17 @@ void main(int argc, char **argv) {
     for(int i=1;i<size;i++) {
 
       p.starting_point = (p.dim*i)+resto;
-      printf("proc%d : %d\n", i, p.starting_point);
+      //printf("proc%d : %d\n", i, p.starting_point);
       MPI_Send(&p, sizeof(p), mpi_pos_type, i, 555, MPI_COMM_WORLD);
     }
 
     p.starting_point = 0;
     p.dim = p.dim+resto;
 
-    printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
+    //printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
 
     seq = file_read(file_in, p);
-
-    printf("proc%d : %s", myrank, seq);
-
+    printf("%s", seq);
 
     free(seq);
 
@@ -71,10 +69,12 @@ void main(int argc, char **argv) {
     pos p;
 
     MPI_Recv(&p, sizeof(p), mpi_pos_type, 0, 555, MPI_COMM_WORLD, &status);
-    printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
+    //printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
 
+    printf("\nproc%d",myrank);
     seq = file_read(file_in, p);
 
+    printf("%s", seq);
 
     free(seq);
 
@@ -86,17 +86,18 @@ void main(int argc, char **argv) {
 
 }
 
-char * file_read(FILE *file, pos p) {
+char* file_read(FILE *file, pos p) {
 
   char *seq;
-  seq = malloc(p.dim * sizeof(char));
+  seq = malloc((p.dim) * (sizeof(char)));
 
   fseek(file,0,p.starting_point);
 
   for(int i=0; i<p.dim; i++) {
 
     seq[i] = fgetc(file);
-
   }
+
+  return seq;
 
 }
