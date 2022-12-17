@@ -3,101 +3,52 @@
 #include <string.h>
 #include <mpi.h>
 
-typedef struct{
-  int starting_point;
-  int dim;
-}pos;
-
-char* file_read(FILE *file, pos p);
-
 void main(int argc, char **argv) {
 
   MPI_Status status;
   int myrank, size;
+
+  //debug
+  int nrchar;
+
+  char *buf;
+  MPI_Offset filesize;
+  MPI_File file_in;
+  int bufsize, rest;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 
-
-  FILE *file_in;
-  int starting_point;
-  file_in = fopen("genoma-test.txt","r");
-  const int    nitems=2;
-  int          blocklengths[2] = {1,1};
-  MPI_Datatype types[2] = {MPI_INT, MPI_INT};
-  MPI_Datatype mpi_pos_type;
-  MPI_Aint     offsets[2];
-  offsets[0] = offsetof(pos, starting_point);
-  offsets[1] = offsetof(pos, dim);
-
-  MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpi_pos_type);
-  MPI_Type_commit(&mpi_pos_type);
+  MPI_File_open (MPI_COMM_WORLD, "b.txt", MPI_MODE_RDONLY,MPI_INFO_NULL, &file_in);
+  MPI_File_get_size(file_in, &filesize);
+  filesize = (filesize/sizeof(char)) - 1;
+  bufsize = filesize/size;
+  rest = filesize%size;
 
   if(myrank == 0) {
+    printf("filesize : %li, rest : %d\n\n",filesize,rest);
+    buf = (char *) malloc((bufsize+rest)*sizeof(char));
+    MPI_File_set_view(file_in, myrank*bufsize*sizeof(char)+myrank*sizeof(char), MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
+    MPI_File_read(file_in, buf, bufsize+rest, MPI_CHAR, &status);
 
-    fseek(file_in, 0, SEEK_END);
-    int dim = ftell(file_in);
-    rewind(file_in);
-    pos p;
-    p.dim = dim/size;
-    int resto = dim%size;
+  }else {
 
-    char *seq;
-
-    for(int i=1;i<size;i++) {
-
-      p.starting_point = (p.dim*i)+resto;
-      //printf("proc%d : %d\n", i, p.starting_point);
-      MPI_Send(&p, sizeof(p), mpi_pos_type, i, 555, MPI_COMM_WORLD);
-    }
-
-    p.starting_point = 0;
-    p.dim = p.dim+resto;
-
-    //printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
-
-    seq = file_read(file_in, p);
-    printf("%s", seq);
-
-    free(seq);
-
-
-
-  } else{
-
-    char *seq;
-    pos p;
-
-    MPI_Recv(&p, sizeof(p), mpi_pos_type, 0, 555, MPI_COMM_WORLD, &status);
-    //printf("proc%d : dim:%d start:%d\n", myrank, p.dim, p.starting_point);
-
-    printf("\nproc%d",myrank);
-    seq = file_read(file_in, p);
-
-    printf("%s", seq);
-
-    free(seq);
+    buf = (char *) malloc((bufsize)*sizeof(char));
+    MPI_File_set_view(file_in, myrank*bufsize*sizeof(char)+rest*sizeof(char), MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
+    MPI_File_read(file_in, buf, bufsize, MPI_CHAR, &status);
 
 
   }
 
-  fclose(file_in);
+  //debug
+  MPI_Get_count(&status, MPI_CHAR, &nrchar);
+  buf[nrchar] = (char)0;
+  printf("Process %2d read %d characters: ", myrank, nrchar);
+  printf("%s\n", buf);
+
+  free(buf);
+  MPI_File_close(&file_in);
   MPI_Finalize();
-
-}
-
-char* file_read(FILE *file, pos p) {
-
-  char *seq;
-  seq = malloc((p.dim) * (sizeof(char)));
-
-  fseek(file,0,p.starting_point);
-
-  for(int i=0; i<p.dim; i++) {
-
-    seq[i] = fgetc(file);
-  }
-
-  return seq;
 
 }
