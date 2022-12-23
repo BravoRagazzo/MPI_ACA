@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DIM 200
+#define DIM 2500
 
-#define NAME1 "b.txt"
+#define NAME1 "genoma-test.txt"
 #define NAME2 "seq.txt"
 
 #define B 101
@@ -33,12 +33,17 @@ int main(int argc, char **argv) {
 printf("----- SEQUENZA -----\n%s\n\n",seq);
 
   int *addr;
-  int i=0;
   addr = rabin_karp(txt,seq);
-  while(*(addr+i) != 0) {
-    printf("\nfound seq at: %d\n", addr[i]);
+  printf("\nseq found %d times\n", addr[0]);
+  int i=1;
+  while(*(addr+i) != -1) {
+    printf("n.%d at: %d\n", i, addr[i]);
     i++;
   }
+
+  free(seq);
+  free(addr);
+  free(txt);
 
   return 0;
 
@@ -48,6 +53,8 @@ int *rabin_karp(char *txt, char*seq) {
 
   int *ret;
   ret = malloc(strlen(txt)*sizeof(int));
+  for(int i=0;i<strlen(txt);i++)
+    ret[i] = -1;
   char buf[strlen(seq)];
   buf[strlen(seq)] = '\0';
 
@@ -59,23 +66,24 @@ int *rabin_karp(char *txt, char*seq) {
   printf("seqhash: %d\n",seqhash);
 
   int j = 0;
-  for(int i=0; i<strlen(txt)-sizeof(buf);i++) {
+  for(int i=0;i<strlen(txt)-sizeof(buf);i++) {
     strncpy(buf,txt+i,sizeof(buf));
-    printf("tratto analizzato: %s\n",buf);
+    printf("\ntratto analizzato: %s\n",buf);
     if(hash(buf) == seqhash) {
-      ret[j] = i;
+      ret[j+1] = i;
       j++;
     } else {
       continue;
     }
   }
 
+  ret[0] = j;
+
   return ret;
 
 }
 
 int hash(char *pattern) {
-  printf("\npat: %s\n",pattern);
   int hash = 0, dim = strlen(pattern);
 
   for(int i=0; i<dim; i++) {
@@ -97,6 +105,8 @@ char *read_file(char file_name[]) {
 
   while(fgets(buf,DIM,file_in))
     ;
+
+  fclose(file_in);
 
   return buf;
 
