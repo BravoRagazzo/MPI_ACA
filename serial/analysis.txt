@@ -1,0 +1,31 @@
+--- STATS BASED ON "TCCCAA" PATTERN ---
+
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls   s/call   s/call  name
+100.00     18.05    18.05        1    18.05    18.05  rabin_karp
+  0.00     18.05     0.00        1     0.00     0.00  read_file
+
+			Call graph
+
+
+granularity: each sample hit covers 4 byte(s) for 0.06% of 18.05 seconds
+
+index % time    self  children    called     name
+               18.05    0.00       1/1           main [2]
+[1]    100.0   18.05    0.00       1         rabin_karp [1]
+-----------------------------------------------
+                                                 <spontaneous>
+[2]    100.0    0.00   18.05                 main [2]
+               18.05    0.00       1/1           rabin_karp [1]
+                0.00    0.00       1/1           read_file [3]
+-----------------------------------------------
+                0.00    0.00       1/1           main [2]
+[3]      0.0    0.00    0.00       1         read_file [3]
+-----------------------------------------------
+
+Index by function name
+
+   [1] rabin_karp              [3] read_file
