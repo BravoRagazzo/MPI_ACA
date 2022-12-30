@@ -1,8 +1,10 @@
+------ ANALYSIS BASED ON SEARCHING "TCCCAA" SEQUENCE ------
+
 Flat profile:
 
 Each sample counts as 0.01 seconds.
   %   cumulative   self              self     total           
- time   seconds   seconds    calls   s/call   s/call  name    
+ time   seconds   seconds    calls   s/call   s/call  name
 100.00     15.17    15.17        1    15.17    15.17  rabin_karp
   0.00     15.17     0.00        1     0.00     0.00  read_file
 
