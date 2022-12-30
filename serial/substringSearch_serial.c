@@ -104,6 +104,8 @@ char *read_file(char file_name[]) {
   while(fread(buf,sizeof(char),DIM,file_in)>0)
     ;
 
+  buf = realloc(buf, strlen(buf));
+
   fclose(file_in);
 
   return buf;
