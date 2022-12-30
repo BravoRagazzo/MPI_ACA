@@ -7,8 +7,8 @@
 
 #define DIM 2147483640
 
-#define NAME1 "../genoma1.txt"
-#define NAME2 "../seq.txt"
+#define NAME1 "../dataset/genoma1.txt"
+#define NAME2 "../dataset/seq.txt"
 
 #define Q 101     // Big prime number
 #define D 256     // Number of characters in the alphabet
