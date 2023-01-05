@@ -8,8 +8,8 @@ char *read_text(MPI_File file, int bufsize, int rest, int rank, int M, MPI_Statu
 char *read_pat(char file_name[]);
 int rabin_karp(char *pat, char *txt, int rank, int rest);
 
-#define NAME1 "./genoma1.txt"
-#define NAME2 "./seq.txt"
+#define NAME1 "../dataset/genoma1.txt"
+#define NAME2 "../dataset/seq.txt"
 #define Q 101     // Big prime number
 #define D 256     // Number of characters in the alphabet
 
@@ -40,6 +40,7 @@ void main(int argc, char **argv) {
       pat = malloc((strlen(argv[1]))*sizeof(char));
       strcpy(pat,argv[1]);
     } else {
+      fflush(stdout);
       printf("INVALID INPUT\n");
     }
 
@@ -56,6 +57,7 @@ void main(int argc, char **argv) {
       i++;
     }
 
+    fflush(stdout);
     printf("NUMERO DI CPU UTILIZZATE : %d\n",newsize);
 
     int send[3];
@@ -75,13 +77,11 @@ void main(int argc, char **argv) {
     for(int i=1; i<newsize; i++)
       MPI_Send(pat,M, MPI_CHAR, i, 0, MPI_COMM_WORLD);
 
-
     char *buf;
     buf = read_text(file_in, bufsize + rest, rest, myrank, 1, status);
 
     int freq,tmp;
     freq = rabin_karp(pat,buf,myrank,rest);
-
 
     free(buf);
     free(pat);
@@ -91,6 +91,7 @@ void main(int argc, char **argv) {
       freq = freq + tmp;
     }
 
+    fflush(stdout);
     printf("SEQUENCE FOUND %d TIMES\n",freq);
 
   }else {
@@ -191,7 +192,10 @@ int rabin_karp(char *pat, char *txt, int rank, int rest){
         }
 
         if(j == M){
-          printf(" \033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
+          fflush(stdout);
+          fprintf(stdout,"\033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
+
+          // printf("\033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
 
           freq++;
         }
