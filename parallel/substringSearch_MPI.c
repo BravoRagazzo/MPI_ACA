@@ -6,14 +6,23 @@
 #include "header/read.h"
 #include "header/rabinkarp.h"
 
-#define NAME1 "../dataset/genoma1.txt"
-#define NAME2 "../dataset/seq.txt"
+#define MAX_FILE_NAME 256
 
 void main(int argc, char **argv) {
 
   MPI_Status status;
   int myrank, size;
   int buf_rest_array[2], M_send;
+
+  if(argc!=3) {
+    printf("INVALID INPUT\n");
+    exit(0);
+  }
+
+  char pat_name[MAX_FILE_NAME] = "./dataset/";
+  char text_name[MAX_FILE_NAME] = "./dataset/";
+  strcat(pat_name,argv[1]);
+  strcat(text_name,argv[2]);
 
   MPI_Offset N;
   MPI_File file_in;
@@ -22,7 +31,7 @@ void main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 
-  MPI_File_open(MPI_COMM_SELF, NAME1, MPI_MODE_RDONLY,MPI_INFO_NULL, &file_in);
+  MPI_File_open(MPI_COMM_SELF, text_name, MPI_MODE_RDONLY,MPI_INFO_NULL, &file_in);
   MPI_File_get_size(file_in, &N);
   N = (N/sizeof(char)) - 1;
 
@@ -31,15 +40,8 @@ void main(int argc, char **argv) {
     bufsize = N/size;
     rest = N%size;
     char *pat;
-    if(argc == 1) {
-      pat = read_pat(NAME2);
-    } else if(argc == 2) {
-      pat = malloc((strlen(argv[1]))*sizeof(char));
-      strcpy(pat,argv[1]);
-    } else {
-      fflush(stdout);
-      printf("INVALID INPUT\n");
-    }
+    pat = read_pat(pat_name);
+
 
     int M = strlen(pat);
     *(pat+M) = '\0';
@@ -61,6 +63,8 @@ void main(int argc, char **argv) {
     buf_rest_array[0] = bufsize;
     buf_rest_array[1] = rest;
     int m[size];
+
+    printf("\npr%d, bufsize: %d, rest; %d", myrank, bufsize, rest);
 
     for(int i=0; i<size; i++) {
       if(i < newsize){
