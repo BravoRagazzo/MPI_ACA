@@ -19,8 +19,8 @@ void main(int argc, char **argv) {
     exit(0);
   }
 
-  char pat_name[MAX_FILE_NAME] = "./dataset/";
-  char text_name[MAX_FILE_NAME] = "./dataset/";
+  char pat_name[MAX_FILE_NAME] = "../dataset/";
+  char text_name[MAX_FILE_NAME] = "../dataset/";
   strcat(pat_name,argv[1]);
   strcat(text_name,argv[2]);
 
