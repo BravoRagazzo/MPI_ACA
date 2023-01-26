@@ -15,7 +15,7 @@ The program takes at most two command line arguments:
 
 * `pattern file`: the file containing the string that will be searched within the text;
 * `text file` : the file containing the text in which the pattern will be searched;
-* Notice that all the txt file must be inside the  `dataset/` directory-
+* Notice that all the txt file must be inside the  `dataset/` directory.
 
 The program will output the positions at which the pattern was found within the text.
 
