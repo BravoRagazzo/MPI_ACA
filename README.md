@@ -9,18 +9,19 @@ This project implements the Rabin Karp algorithm for substring search using the 
 
 ## Usage
 * To compile the program, use the following command: `mpicc -o rabin_karp_mpi rabin_karp_mpi.c`  
-* To run the program, use the following command: `mpirun -n [number of processes] ./rabin_karp_mpi [text file] {pattern}`
+* To run the program, use the following command: `mpirun -n [number of processes] ./rabin_karp_mpi [pattern file] [text file]`
 
 The program takes at most two command line arguments:
 
-* `text file`: the file containing the text in which the pattern will be searched
-* `pattern` (optional): the string that will be searched for within the text. If not present the pattern is obtained from the file `pat.txt`
+* `pattern file`: the file containing the string that will be searched within the text;
+* `text file` : the file containing the text in which the pattern will be searched;
+* Notice that all the txt file must be inside the  `dataset/` directory-
 
 The program will output the positions at which the pattern was found within the text.
 
 ## Example
-`mpirun -n 4 ./rabin_karp_mpi text.txt "the"`  
-This command will run the program using 4 processes and search for the substring "the" in the file "text.txt". The program will output the positions where "the" was found in the text.
+`mpirun -n 4 ./rabin_karp_mpi pat.txt text.txt`  
+This command will run the program using 4 processes and search in the file "text.txt" for the substring contained in "pat.tx". 
 
 ## Note
 The program assumes that the text file provided is small enough to be read into memory and distributed among the processes, and that the pattern provided is smaller than the text file.
