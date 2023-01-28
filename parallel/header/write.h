@@ -4,22 +4,30 @@
 #include <unistd.h>
 #include <mpi.h>
 
-void print_freq(int index, MPI_File result, int rank, MPI_Status status);
-FILE *open_file(int rank);
+void merge_files(int newsize);
 
-void print_freq(int index, MPI_File result, int rank, MPI_Status status) {
+void merge_files(int newsize) {
 
-  char print_array[256];
-  sprintf(print_array,"Pattern found at index: %d\n",index);
+  if(newsize==1)
+    system("mv ./result/rank0.txt ./result/output.txt");
+  else
+  {
+    FILE *file_array[newsize];
+    FILE *out = fopen("./result/output.txt","wb");
+    char str[256];
 
-  MPI_File_write(result, print_array, strlen(print_array), MPI_CHAR, &status);
+    for(int i = 0;i<newsize;i++){
+      sprintf(str,"./result/rank%d.txt",i);
+      file_array[i] = fopen(str,"rb");
+      fseek(file_array[i],0,SEEK_END);
+      long filesize = ftell(file_array[i]);
+      rewind(file_array[i]);
+      char buffer[filesize];
+      fread(buffer,1,filesize,file_array[i]);
+      fwrite(buffer,1,filesize,out);
+      fclose(file_array[i]);
+    }
+    fclose(out);
+  }
 
-}
-
-FILE *open_file(int rank){
-  FILE *f;
-  char *file_name;
-  sprintf(file_name,"./result/rank%d.txt",rank);
-  f = fopen(file_name,"w");
-  return f;
 }

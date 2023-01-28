@@ -5,14 +5,18 @@
 #include <limits.h>
 #include "header/read.h"
 #include "header/rabinkarp.h"
+#include "header/write.h"
 
 #define MAX_FILE_NAME 256
 
 void main(int argc, char **argv) {
 
   MPI_Status status;
-  int myrank, size;
-  int buf_rest_array[2], M_send;
+  int myrank, size, pat_len, flag_send, newsize ;
+  int send[3];
+  char *pat;
+  int *rec_freq;
+  int freq = 0;
 
   if(argc!=3) {
     printf("INVALID INPUT\n");
@@ -24,111 +28,113 @@ void main(int argc, char **argv) {
   strcat(pat_name,argv[1]);
   strcat(text_name,argv[2]);
 
-  MPI_Offset N;
+  MPI_Offset txt_len;
   MPI_File file_in;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 
+  int flag [size];
+  MPI_File f;
+
+  char file_name[MAX_FILE_NAME];
+
   MPI_File_open(MPI_COMM_SELF, text_name, MPI_MODE_RDONLY,MPI_INFO_NULL, &file_in);
-  MPI_File_get_size(file_in, &N);
-  N = (N/sizeof(char)) - 1;
+  MPI_File_get_size(file_in, &txt_len);
+  txt_len = (txt_len/sizeof(char))-1;
+
+  int bufsize, rest;
 
   if(myrank == 0) {
-    int bufsize, rest;
-    bufsize = N/size;
-    rest = N%size;
-    char *pat;
+    bufsize = txt_len/size;
+    rest = txt_len%size;
+
     pat = read_pat(pat_name);
 
+    pat_len = strlen(pat);
 
-    int M = strlen(pat);
-    *(pat+M) = '\0';
+    newsize = size;
+    int i = 0;
 
-    int newsize = size;
-    int i = 1;
-
-    while((M > bufsize + rest + 1) && (size-i > 1)) {
+    while((pat_len > bufsize + rest + 1) && (size-i >= 1)) {
       newsize = size - i;
-      bufsize = N/newsize;
-      rest = N%newsize;
+      bufsize = txt_len/newsize;
+      rest = txt_len%newsize;
       i++;
     }
 
-    fflush(stdout);
     printf("NUMERO DI CPU UTILIZZATE : %d\n",newsize);
 
-    int send[2];
-    buf_rest_array[0] = bufsize;
-    buf_rest_array[1] = rest;
-    int m[size];
+    send[0] = bufsize;
+    send[1] = rest;
+    send[2] = pat_len;
 
-    printf("\npr%d, bufsize: %d, rest; %d", myrank, bufsize, rest);
 
     for(int i=0; i<size; i++) {
       if(i < newsize){
-        m[i]=M;
+        flag[i]=1;
       }else{
-        m[i]=0;
+        flag[i]=0;
       }
     }
+    system("rm -rf ./result/*");
+  }
 
-    MPI_Scatter(m, 1, MPI_INT, &M_send, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(pat, M, MPI_CHAR, 0, MPI_COMM_WORLD);
-    MPI_Bcast(buf_rest_array, 2, MPI_INT, 0, MPI_COMM_WORLD);
 
+  MPI_Bcast(send, 3, MPI_INT, 0, MPI_COMM_WORLD);
+  bufsize = send[0];
+  rest = send[1];
+  pat_len = send[2];
+
+  //printf("%d - %d - %d \n", bufsize, rest, pat_len);
+
+  if(myrank!=0){
+    pat = (char*)malloc((pat_len)*sizeof(char)) ;
+    *(pat+pat_len) = '\0';
+  }
+
+  MPI_Bcast(pat,pat_len,MPI_CHAR,0,MPI_COMM_WORLD);
+  MPI_Scatter(flag, 1, MPI_INT, &flag_send, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+  if(flag_send == 0){
+    freq = 0;
+  }else{
+
+    sprintf(file_name,"./result/rank%d.txt",myrank);
+    MPI_File_open(MPI_COMM_SELF, file_name, MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL, &f);
     char *buf;
-    buf = read_text(file_in, bufsize + rest, rest, myrank, 1, status);
-
-    int freq,tmp;
-    freq = rabin_karp(pat,buf,myrank,rest);
-
+    buf = read_text(file_in, (myrank==0? (bufsize+rest) : bufsize), rest, myrank, pat_len, status);
+    freq = rabin_karp(pat,buf,myrank,rest,f);
     free(buf);
-    free(pat);
-    MPI_Barrier(MPI_COMM_WORLD);
+  }
 
-    for(i = 1; i<newsize; i++) {
-      MPI_Recv(&tmp, 1, MPI_INT, i, 111, MPI_COMM_WORLD, &status);
-      freq = freq + tmp;
+  if(myrank==0){
+    rec_freq = (int*)malloc(sizeof(int)*size);
+  }
+
+  MPI_Gather(&freq, 1, MPI_INT, rec_freq, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  if(myrank == 0){
+    int total_freq = 0;
+    for(int i = 0; i<size;i++){
+      total_freq = total_freq + rec_freq[i];
     }
+    printf("PATTERN FOUND %d TIMES\n",total_freq);
 
-    fflush(stdout);
-
-    printf("SEQUENCE FOUND %d TIMES\n",freq);
-
-  } else{
-    char *pat;
-    int bufsize,rest,freq;
-
-    MPI_Scatter(NULL, 1, MPI_INT, &M_send, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    if(M_send != 0) {
-      pat = malloc(M_send*sizeof(char));
-      MPI_Bcast(pat, M_send, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-      *(pat+M_send)='\0';
-
-      MPI_Bcast(buf_rest_array, 2, MPI_INT, 0, MPI_COMM_WORLD);
-
-      bufsize = buf_rest_array[0];
-      rest = buf_rest_array[1];
-
-      char *buf;
-      buf = read_text(file_in, bufsize, rest, myrank, M_send, status);
-
-      freq = rabin_karp(pat,buf,myrank,rest);
-
-
-      free(buf);
-      free(pat);
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Send(&freq, 1, MPI_INT, 0, 111, MPI_COMM_WORLD);
-    }
+    merge_files(newsize);
 
   }
 
+  free(pat);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  if(flag_send!=0){
+      MPI_File_close(&f);
+  }
+
+  system("rm -rf ./result/rank*.txt");
   MPI_File_close(&file_in);
   MPI_Finalize();
 

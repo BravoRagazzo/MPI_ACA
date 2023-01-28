@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
-#include "write.h"
 
 int rabin_karp(char *pat, char *txt, int rank, int rest,MPI_File f);
 
