@@ -18,7 +18,7 @@ char *read_text(MPI_File file, int bufsize, int rest, int rank, int M, MPI_Statu
   *(seq+bufsize+M-1) = '\0';
 
   MPI_File_set_view(file, rank == 0 ? 0 : (bufsize * (rank-1)) + bufsize + rest - (M - 1), MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
-  MPI_File_read(file, seq, bufsize+M-1, MPI_CHAR, &status);
+  MPI_File_read(file, seq, rank == 0 ? bufsize : bufsize+M-1, MPI_CHAR, &status);
   MPI_Get_count(&status, MPI_CHAR, &nrchar);
 
   // printf("Process %2d read %d characters: %s\n", rank, nrchar,seq);

@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mpi.h>
+#include "write.h"
 
-int rabin_karp(char *pat, char *txt, int rank, int rest);
+int rabin_karp(char *pat, char *txt, int rank, int rest,MPI_File f);
 
-int rabin_karp(char *pat, char *txt, int rank, int rest){
+int rabin_karp(char *pat, char *txt, int rank, int rest, MPI_File f){
 
+  char str[256];
   int M = strlen(pat);
   int N = strlen(txt);
   int i,j;
@@ -33,13 +36,15 @@ int rabin_karp(char *pat, char *txt, int rank, int rest){
         }
 
         if(j == M){
-          fflush(stdout);
+
           //fprintf(stdout,"\033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
-          printf("\033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
+
+          //printf("\033[0;32mPattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
+          sprintf(str,"Pattern found at index %d\n",rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
+          MPI_File_write(f, str, strlen(str), MPI_CHAR, MPI_STATUS_IGNORE);
           freq++;
         }
       }
-
       // Calculate hash value for next window of text:
       // remove leading digit, add trailing digit
       if(i < N - M){
