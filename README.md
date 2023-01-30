@@ -1,14 +1,14 @@
 # Substring Search with application to Genomics
 
 ## Introduction
-This project implements the Rabin Karp algorithm for substring search using the Message Passing Interface (MPI) library for parallel processing. The Rabin Karp algorithm is a string matching algorithm that uses a rolling hash function to efficiently search for a given pattern within a larger text. MPI is a library that allows for the parallel execution of programs across multiple processors or machines.
+This project implements the Rabin Karp algorithm for substring search using the Message Passing Interface (MPI) library for parallel processing. The Rabin Karp algorithm is a string matching algorithm that uses a rolling hash function to efficiently search for a given pattern within a larger text. MPI is a library that allows parallel execution of programs across multiple processors or machines.
 
 ## Requirements
 * C compiler (e.g. GCC)
 * MPI library (e.g. OpenMPI)
 
 ## Usage
-* To compile the program, use the following command: `mpicc -o rabin_karp_mpi rabin_karp_mpi.c`  
+* To compile the program, use the following command: `mpicc -o rabin_karp_mpi substringSearch_MPI.c`  
 * To run the program, use the following command: `mpirun -n [number of processes] ./rabin_karp_mpi [pattern file] [text file]`
 
 The program takes at most two command line arguments:
