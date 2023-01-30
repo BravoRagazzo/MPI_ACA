@@ -10,23 +10,21 @@
 #define NAME1 "../dataset/genoma1.txt"
 #define NAME2 "../dataset/seq.txt"
 
-#define Q 101     // Big prime number
-#define D 256     // Number of characters in the alphabet
+#define Q 101
+#define D 256
 
 char *read_file(char file_name[]);
 void rabin_karp(char *pat, char *txt);
 
 int main(int argc, char **argv) {
 
-  char *txt, *pat;
+  clock_t start = clock();    //----- starting time counter
 
-  // Reading file to analyze
-  txt = read_file(NAME1);
+  char *txt, *pat;            //----- pointers to text and pattern
+  txt = read_file(NAME1);     //----- reading text
 
-  // Checking if we have to read sequence from file or command line
-  // Reading sequence to find in the text
   if(argc == 1) {
-    pat = read_file(NAME2);
+    pat = read_file(NAME2);   //----- reading patter
     *(pat+strlen(pat)-1) = '\0';
   } else if(argc == 2) {
     pat = malloc((strlen(argv[1]))*sizeof(char));
@@ -37,11 +35,14 @@ int main(int argc, char **argv) {
 
   printf("----- SEQUENCE -----\n%s\n\n",pat);
 
-  // Rabin Karp algorithm to find the sequence
-  rabin_karp(pat, txt);
+  rabin_karp(pat, txt);       //----- executing the rabin karp algorithm
 
-  free(pat);
-  free(txt);
+  free(pat);    //----- unallocating pattern array
+  free(txt);    //----- unallocating text array
+
+  clock_t end = clock();
+
+  printf("TIME %f\n",(float)(end-start)/CLOCKS_PER_SEC);
 
   return 0;
 
@@ -49,52 +50,45 @@ int main(int argc, char **argv) {
 
 void rabin_karp(char *pat, char *txt){
 
-  int M = strlen(pat);
-  int N = strlen(txt);
-  int i,j;
-  int txt_hash = 0, pat_hash = 0, freq = 0;
+  int pat_len = strlen(pat);    //----- pattern length
+  int txt_len = strlen(txt);    //----- text length
+  int i,j;                      //----- counters
+  int pat_hash = 0;             //----- pattern hash value
+  int txt_hash = 0;             //----- text hash value
+  int freq = 0;                 //----- frequency of found pattern
   int h = 1;
 
-  // h = pow(D,M-1) % Q
-  for (i = 0; i < M - 1; i++)
-    h = (h * D) % Q;
+    for (i = 0; i < pat_len - 1; i++)
+      h = (h * D) % Q;          //----- h = D^(pat_len - 1)
 
-  // Computing the hash value of pattern and first window of the text
-  for(i = 0; i < M; i++){
-    pat_hash = (D * pat_hash + *(pat + i)) % Q;
-    txt_hash = (D * txt_hash + *(txt + i)) % Q;
-  }
-
-  for(i = 0; i <= N - M; i++){
-    // Check the hash values of current window of text and pattern
-    // If the hash values match then only check for characters one by one
-    if(pat_hash == txt_hash){
-      // Check for characters one by one
-      for(j = 0; j < M; j++){
-        if(*(txt + i + j) != *(pat + j))
-          break;
-      }
-
-      if(j == M){
-        printf("Pattern found at index %d\n",i);
-        freq++;
-      }
+    for(i = 0; i < pat_len; i++){
+      pat_hash = (D * pat_hash + *(pat + i)) % Q;   //----- computing the pattern hash value
+      txt_hash = (D * txt_hash + *(txt + i)) % Q;   //----- computing the hash value of the first chunk of text
     }
 
-    // Calculate hash value for next window of text:
-    // remove leading digit, add trailing digit
-    if(i < N - M){
-      txt_hash = (D * (txt_hash - *(txt + i) * h) + *(txt + i + M)) % Q;
+    for(i = 0; i <= txt_len - pat_len; i++){
+      if(pat_hash == txt_hash){                     //----- checking if the hashes are equal
+        for(j = 0; j < pat_len; j++){               //      if yes the pattern and the chunk of text are checked
+          if(*(txt + i + j) != *(pat + j))          //      character by character
+            break;
+        }
 
-      //We might get negative value of txt_hash so we convert it to positive
-      if(txt_hash < 0)
-        txt_hash = txt_hash + Q;
+        if(j == pat_len){     //----- if the hash values match all the cores print the indexes and increment the frequency
+          printf("Pattern found at index %d\n",i);
+          freq++;
+        }
+      }
+
+      if(i < txt_len - pat_len){    //---- calculating the hash value of the next text chunk adding the next character and removing the first one
+        txt_hash = (D * (txt_hash - *(txt + i) * h) + *(txt + i + pat_len)) % Q;
+
+        if(txt_hash < 0)            //----- if the hash value is negative it will be converted in positive
+          txt_hash = txt_hash + Q;
+      }
     }
-  }
-  printf("\nPattern found %d times\n\n",freq);
 }
 
-char *read_file(char file_name[]) {
+char *read_file(char file_name[]) {   //----- reading the input file and allocating the arrays
 
   FILE *file_in;
   char *buf;

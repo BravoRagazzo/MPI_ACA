@@ -3,54 +3,46 @@
 #include <string.h>
 #include <mpi.h>
 
-int rabin_karp(char *pat, char *txt, int rank, int rest,MPI_File f);
+#define Q 101     //----- big prime number
+#define D 256     //----- number of characters in the alphabet
 
-int rabin_karp(char *pat, char *txt, int rank, int rest, MPI_File f){
+int rabin_karp(char *pat, char *txt, int rank, int rest);
 
-  char str[256];
-  int M = strlen(pat);
-  int N = strlen(txt);
-  int i,j;
-  int txt_hash = 0, pat_hash = 0, freq = 0;
+int rabin_karp(char *pat, char *txt, int rank, int rest){
+
+  int pat_len = strlen(pat);    //----- pattern length
+  int txt_len = strlen(txt);    //----- text length
+  int i,j;                      //----- counters
+  int pat_hash = 0;             //----- pattern hash value
+  int txt_hash = 0;             //----- text hash value
+  int freq = 0;                 //----- frequency of found pattern
   int h = 1;
 
-    // h = pow(D,M-1) % Q
-    for (i = 0; i < M - 1; i++)
-      h = (h * D) % Q;
+    for (i = 0; i < pat_len - 1; i++)
+      h = (h * D) % Q;          //----- h = D^(pat_len - 1)
 
-    // Computing the hash value of pattern and first window of the text
-    for(i = 0; i < M; i++){
-      pat_hash = (D * pat_hash + *(pat + i)) % Q;
-      txt_hash = (D * txt_hash + *(txt + i)) % Q;
+    for(i = 0; i < pat_len; i++){
+      pat_hash = (D * pat_hash + *(pat + i)) % Q;   //----- computing the pattern hash value
+      txt_hash = (D * txt_hash + *(txt + i)) % Q;   //----- computing the hash value of the first chunk of text
     }
 
-    for(i = 0; i <= N - M; i++){
-      // Check the hash values of current window of text and pattern
-      // If the hash values match then only check for characters one by one
-      if(pat_hash == txt_hash){
-        // Check for characters one by one
-        for(j = 0; j < M; j++){
-          if(*(txt + i + j) != *(pat + j))
+    for(i = 0; i <= txt_len - pat_len; i++){
+      if(pat_hash == txt_hash){                     //----- checking if the hashes are equal
+        for(j = 0; j < pat_len; j++){               //      if yes the pattern and the chunk of text are checked
+          if(*(txt + i + j) != *(pat + j))          //      character by character
             break;
         }
 
-        if(j == M){
-
-          //fprintf(stdout,"\033[0;32m Pattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
-
-          //printf("\033[0;32mPattern found at index %d\n\033[0m", rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
-          sprintf(str,"Pattern found at index %d\n",rank == 0 ? i : i+(N-(M-1)+rest)-M+1+((rank-1)*(N-M+1)));
-          MPI_File_write(f, str, strlen(str), MPI_CHAR, MPI_STATUS_IGNORE);
+        if(j == pat_len){     //----- if the hash values match all the cores print the indexes and increment the frequency
+          printf("Pattern found at index %d\n", rank == 0 ? i : i+(txt_len-(pat_len-1)+rest)-pat_len+1+((rank-1)*(txt_len-pat_len+1)));
           freq++;
         }
       }
-      // Calculate hash value for next window of text:
-      // remove leading digit, add trailing digit
-      if(i < N - M){
-        txt_hash = (D * (txt_hash - *(txt + i) * h) + *(txt + i + M)) % Q;
 
-        //We might get negative value of txt_hash so we convert it to positive
-        if(txt_hash < 0)
+      if(i < txt_len - pat_len){    //---- calculating the hash value of the next text chunk adding the next character and removing the first one
+        txt_hash = (D * (txt_hash - *(txt + i) * h) + *(txt + i + pat_len)) % Q;
+
+        if(txt_hash < 0)            //----- if the hash value is negative it will be converted in positive
           txt_hash = txt_hash + Q;
       }
     }
